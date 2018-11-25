@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+*.log
+.idea
+haters/
+variables.env
+variables.env.now
+package-lock.json
+public/dist/
+readme.md
