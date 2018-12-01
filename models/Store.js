@@ -82,6 +82,36 @@ storeSchema.statics.getTagsList = function() {
   ]);
 };
 
+storeSchema.statics.getTopStores = function() {
+  return this.aggregate([
+    // Lookup stores and populate their reviews
+    {
+      $lookup: {
+        from: "reviews",
+        localField: "_id",
+        foreignField: "store",
+        as: "reviews"
+      }
+    },
+    // filter for only items that have 2 or more reviews
+    { $match: { "reviews.1": { $exists: true } } },
+    // Add the avarage reviews
+    {
+      $project: {
+        photo: "$$ROOT.photo",
+        name: "$$ROOT.name",
+        reviews: "$$ROOT.reviews",
+        slug: "$$ROOT.slug",
+        averageRating: { $avg: "$reviews.rating" }
+      }
+    },
+    // sort it out by new field, heighst reviews first
+    { $sort: { averageRating: -1 } },
+    // limit to at most 10
+    { $limit: 10 }
+  ]);
+};
+
 storeSchema.virtual("reviews", {
   ref: "Review", // What model to link?
   localField: "_id", // which field on store
