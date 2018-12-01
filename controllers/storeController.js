@@ -55,9 +55,37 @@ exports.createStore = async (req, res) => {
 };
 
 exports.getStores = async (req, res) => {
+  const page = req.params.page || 1;
+  const limit = 4;
+  const skip = page * limit - limit;
   // 1. Query the database for all stores
-  const allStores = await Store.find();
-  res.render("stores", { title: "Stores", stores: allStores });
+  const allStoresPromise = Store.find()
+    .skip(skip)
+    .limit(limit)
+    .sort({ created: "desc" });
+  const countPromise = Store.count();
+  const [allStores, count] = await Promise.all([
+    allStoresPromise,
+    countPromise
+  ]);
+
+  const pages = Math.ceil(count / limit);
+
+  if (!allStores.length && skip) {
+    req.flash(
+      "info",
+      `Hey! You asked for page ${page}. But that doesn't exist. So, I put you on page ${pages} 👏`
+    );
+    res.redirect(`/stores/page/${pages}`);
+    return;
+  }
+  res.render("stores", {
+    title: "Stores",
+    stores: allStores,
+    count,
+    page,
+    pages
+  });
 };
 
 const confirmOwner = (store, user) => {
